@@ -1,0 +1,122 @@
+04 Preparing Additional data using JPQL IPL dashboard
+
+
+Additonal data
+1. Team
+	> model
+	> will have the following properties: long id, String teamName, long totalWin, long totalMatches
+
+
+Steps
+1. Create an @Entity that will hold Team info
+2. Inject EntityManager, instead of the JdbcTemplate provided in sample code
+3. Using the EntityManager, create a logic in the afterJob() of JobCompletionNotificationListener to create the Team data and populate it with necessary information
+
+
+Populating Team data using EntityManager
+1. Create a Map of String and Team to hold teamData
+	> the String will represent the teamName
+2. Using EntityManager, query for unique instances of teamName in the team1 and team2 columns, alongside the number of occurances in each column
+	> the total instances of a team in both team1 and team2 column of match table will serve as the totalMatches of the Team
+	> we will populate the teamData Map with the resultList of the query
+3. Query for the number of instances a teamName appears in the "winner" column
+	> this will be the totalWins of a Team
+	> update this property of Team in the teamData Map
+4. Iterate through all the values that exist in the teamData Map, and save them using EntityManager
+	> we can do a peek() as well to print out the final Team data
+
+
+
+NOTES:
+1. Delhi Capitals have changes their names from Delhi Daredevils. Make sure to overwrite the old name to new name to ensure proper dataset
+2. Make sure to add @GeneratedValue to the "id" property of the Team @Entity
+3. Make sure to add @Transactional to the afterJob() method of the JobCompletionNotificationManager class
+
+
+
+
+Code:
+// JobCompletionNotificationListener.java
+@Component
+public class JobCompletionNotificationListener extends JobExecutionListenerSupport {
+
+    private static final Logger log = LoggerFactory.getLogger(JobCompletionNotificationListener.class);
+
+    private final EntityManager em;
+
+    @Autowired
+    public JobCompletionNotificationListener(EntityManager em) {
+        this.em = em;
+    }
+
+    @Override
+    @Transactional
+    public void afterJob(JobExecution jobExecution) {
+        if(jobExecution.getStatus() == BatchStatus.COMPLETED) {
+            log.info("!!! JOB FINISHED! Time to verify the results");
+
+            Map<String, Team> teamData = new HashMap<>();
+
+            /*
+            * Get total instances of each team playing first and second inning (represents total matches)
+            * Get instances of each team in the "winner" column, represents totalWins
+            * Persist the teams stored in the Map of String+Team
+            * */
+            em.createQuery("SELECT m.team1, count(*) FROM Match m GROUP BY m.team1", Object[].class)
+                    .getResultList()
+                    .stream()
+                    .map(rs -> new Team((String) rs[0], (long) rs[1]))
+                    .forEach(team -> teamData.put(team.getTeamName(), team));
+
+            em.createQuery("SELECT m.team2, count(*) FROM Match m GROUP BY m.team2", Object[].class)
+                    .getResultList()
+                    .stream()
+                    .peek(rs -> {
+                        String teamName = (String) rs[0];
+                        if(teamData.get(teamName) == null) {
+                            teamData.put(teamName,new Team(teamName, (long) rs[1]));
+                        }
+                    })
+                    .forEach(rs -> {
+                        String teamName = (String) rs[0];
+                        Team team = teamData.get(teamName);
+                        team.setTotalMatches(team.getTotalMatches() + (long) rs[1]);
+                    });
+
+            em.createQuery("SELECT m.winner, count(*) FROM Match m GROUP BY m.winner", Object[].class)
+                    .getResultList()
+                    .stream()
+                    .forEach(rs -> {
+                        String teamName = (String) rs[0];
+                        Team team = teamData.get(teamName);
+                        if(team != null) {
+                            team.setTotalWins((long) rs[1]);
+                        }
+                    });
+
+            teamData.values()
+                    .stream().peek(System.out::println)
+                    .forEach(em::persist);
+        }
+    }
+}
+
+
+// Team.java
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Entity
+public class Team {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+    private String teamName;
+    private long totalMatches;
+    private long totalWins;
+
+    public Team(String teamName, long totalMatches) {
+        this.teamName = teamName;
+        this.totalMatches = totalMatches;
+    }
+}

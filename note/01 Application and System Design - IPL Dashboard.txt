@@ -1,0 +1,40 @@
+01 Application and System Design - IPL Dashboard
+
+IPL Dashboard
+ > application to see the IPL data, which include
+	- teams
+	- matches
+	- timeline
+
+
+Application and System Designs Steps
+1. UI/UX designs
+2. Dataset that we will use
+	> this will affect everything in our application
+
+
+
+Kaggle
+ > Kaggle allows users to find and publish data sets, explore and build models in a web-based data-science environment, work with other data scientists and machine learning engineers, and enter competitions to solve data science challenges.
+ > we will be using this to get the IPL dataset
+
+
+
+System Design
+1. Spring Boot app will have the following components
+	> In memory database
+	> CSV file that we will use to as dataset
+	> Spring batch to process CSV file to populate db
+2. React frontend will connect to a Loadbalancer that redirects request to any Spring Boot app instance
+
+
+
+
+NOTES:
+1. Steps when creating an application
+ 	> USER REQUIREMENT
+	> USER EXPERIENCE DESIGN
+	> PRODUCT DESCRIPTION
+	> SYSTEM DESIGN
+	> CODE WRITING
+2. For application that have "static" data (where we will only "read" the data and not write), then its better to do an in-memory database

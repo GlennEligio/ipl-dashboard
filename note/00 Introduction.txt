@@ -1,0 +1,26 @@
+01 Introduction
+
+IPL
+ > stands for Indian Premier League
+ > related to Cricket
+
+IPL Dashboard
+ > dashboard to display data about IPL
+ > uses the following tech stack
+ 	- Spring Boot
+	- React 
+	- AWS
+
+
+Technologies used:
+ > Spring Boot
+ > Spring Batch	
+	- used to ingest the data and populate the database
+ > JPA
+	- interact with the database
+ > JPQL and JPA repositories
+ > Spring MVC APIs
+ > React frontend
+ > Functional Components, Effects, Hooks
+ > CSS Grid
+ > AWS Elastic Beanstalk

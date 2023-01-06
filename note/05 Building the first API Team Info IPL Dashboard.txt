@@ -1,0 +1,97 @@
+05 Building the first API Team Info IPL Dashboard
+
+
+GOAL:
+1. Create endpoint to serve Team information, which
+	> takes teamName as path var input 
+	> includes data:
+		> id
+		> teamName
+		> totalMatches
+		> totalWins
+		> latestMatches played (4)
+2. Create an endpoint to serve Team matches information, which:
+	> takes year as request param input
+	> we can filter using year where it is played
+
+
+
+
+NOTES:
+1. Designing an API require balancing. 
+	> On one end, we can create the REST API in a vacuum. These means that the client consuming the API will have to adjust more. This will result in more code in the client and more request to be sent in the API
+	> On the other end, we can make our REST API to accomodate the clients that will consume it. This will result in more code in the API itself and theres a chance that the API will become less RESTful
+	> We should strike a balance in this, where we will accomodate the client that will use the API, but at the same time, make sure that the API is still RESTful
+2. Domain/Data logic, as much as possible, should not be use or created in the Controller layer
+	> this results in a tight coupling of the Domain and Controller layers
+	> to remedy this, we can create a Service/DAO layer, or add default interface methods in the Repository Interfaces
+3. We can create default interface methods inside JPA Repository interfaces
+	> this default interfaces can also use the defined query methods in the JpaRepositories
+4. We can add @Transient on the properties of @Entity class that we DONT want to PERSIST in the database
+
+
+
+CODE:
+// TeamRepository.java
+public interface TeamRepository extends CrudRepository<Team, Long> {
+    Optional<Team> findByTeamName(String teamName);
+}
+
+
+// MatchRepository.java
+public interface MatchRepository extends CrudRepository<Match, Long> {
+
+    List<Match> getByTeam1OrTeam2OrderByDateDesc(String teamName1, String teamName2, Pageable pageable);
+
+    default List<Match> findLatestMatchesByTeam(String teamName, int count) {
+        return getByTeam1OrTeam2OrderByDateDesc(teamName, teamName, PageRequest.of(0, count));
+    }
+}
+
+
+// Team.java
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Entity
+public class Team {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+    private String teamName;
+    private long totalMatches;
+    private long totalWins;
+
+    @Transient
+    private List<Match> matches;
+
+    public Team(String teamName, long totalMatches) {
+        this.teamName = teamName;
+        this.totalMatches = totalMatches;
+    }
+}
+
+
+// TeamController.java
+@RestController
+@RequestMapping("/api/v1/teams")
+public class TeamController {
+
+    private TeamRepository repository;
+    private MatchRepository matchRepository;
+
+    public TeamController(TeamRepository repository, MatchRepository matchRepository) {
+        this.repository = repository;
+        this.matchRepository = matchRepository;
+    }
+
+    @GetMapping("/{teamName}")
+    public ResponseEntity<Team> getTeam(@PathVariable String teamName) {
+        Optional<Team> team = repository.findByTeamName(teamName);
+        List<Match> matches = matchRepository.findLatestMatchesByTeam(teamName, 4);
+        return team.map(team1 -> {
+            team1.setMatches(matches);
+            return ResponseEntity.ok(team1);
+        }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+}

@@ -1,0 +1,115 @@
+03 Ingesting data using Spring Batch IPL Dashboard
+
+@Annotations used:
+@EnableBatchProcessing
+ > Enable Spring Batch features and provide a base configuration for setting up batch jobs in an @Configuration class
+
+Interface/Classes used
+ItemProcessor
+ > used to process the data received in the Reader and sends the output to the Writer of the Step
+
+
+Setting up our Batch processing
+1. Create a Spring @Configuration class
+2. Define @Bean for ItemReader, ItemProcessor, and ItemWriter inside BatchConfig class
+	> this may differ based on the type of source, processor implementation, and destination of the data output
+	> ex: for CSV files, we may use FlatFileItemReader, and if we will use SQL for writing data, we will use JdbcBatchItemWriter
+3. Configure the sample code given in the Spring Guide to match the input and output data
+4. Also inside the Batch Config Class, we will create @Bean for the Job and Step that we will use to define the Job and Step to execute
+	> inside the Step @Bean, we will pass the reader, writer, and processor
+5. Create a subclass of JobExecutionerListener, as we will use this 
+when we define a Job @Bean
+
+
+NOTES:
+1. As of Jan 6 2023, we dont need to add @EnableBatchProcessing to @Configuration class that we created, as this is automatically added in the @SpringBootApplication
+2. For column names in the SQL statement that we use in the JdbcBatchItemWriter, we must use "Snake Case"
+	> ex: INSERT INTO table (column_name1, column_name2) VALUES (?, ?);
+
+
+
+Codes:
+// BatchConfig class, @Configuration
+@Configuration
+public class BatchConfig {
+    
+    private final static String[] FIELDS = {"id","city","date","player_of_match","venue","neutral_venue","team1","team2","toss_winner","toss_decision","winner","result","result_margin","eliminator","method","umpire1","umpire2"};
+
+    @Bean
+    public FlatFileItemReader<MatchInput> reader() {
+        return new FlatFileItemReaderBuilder<MatchInput>()
+                .name("MatchItemReader")
+                .resource(new ClassPathResource("match-data.csv"))
+                .linesToSkip(1)
+                .delimited()
+                .names(FIELDS)
+                .fieldSetMapper(new BeanWrapperFieldSetMapper<MatchInput>() {{
+                    setTargetType(MatchInput.class);
+                }})
+                .build();
+    }
+
+    @Bean
+    public MatchDataProcessor processor() {
+        return new MatchDataProcessor();
+    }
+
+    @Bean
+    public JdbcBatchItemWriter<Match> writer(DataSource dataSource) {
+        return new JdbcBatchItemWriterBuilder<Match>()
+                .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
+                .sql("INSERT INTO match (id,city,date,player_of_match,venue,team1,team2,toss_winner,toss_decision,winner,result,result_margin,umpire1,umpire2)" +
+                        " VALUES (:id, :city, :date, :playerOfMatch, :venue, :team1, :team2, :tossWinner, :tossDecision, :winner, :result, :resultMargin, :umpire1, :umpire2)")
+                .dataSource(dataSource)
+                .build();
+    }
+
+    @Bean
+    public Job importUserJob(JobRepository jobRepository,
+                             JobCompletionNotificationListener listener, Step step1) {
+        return new JobBuilder("importUserJob", jobRepository)
+                .incrementer(new RunIdIncrementer())
+                .listener(listener)
+                .flow(step1)
+                .end()
+                .build();
+    }
+
+    @Bean
+    public Step step1(JobRepository jobRepository,
+                      PlatformTransactionManager transactionManager, JdbcBatchItemWriter<Match> writer) {
+        return new StepBuilder("step1", jobRepository)
+                .<MatchInput, Match> chunk(10, transactionManager)
+                .reader(reader())
+                .processor(processor())
+                .writer(writer)
+                .build();
+    }
+}
+
+
+
+// JobCompletionNotificationListener.java
+@Component
+public class JobCompletionNotificationListener extends JobExecutionListenerSupport {
+
+    private static final Logger log = LoggerFactory.getLogger(JobCompletionNotificationListener.class);
+
+    private final JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    public JobCompletionNotificationListener(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    @Override
+    public void afterJob(JobExecution jobExecution) {
+        if(jobExecution.getStatus() == BatchStatus.COMPLETED) {
+            log.info("!!! JOB FINISHED! Time to verify the results");
+
+            jdbcTemplate.query("SELECT team1, team2, date FROM match",
+                    (rs, row) -> "Team1 " + rs.getString(1) + "Team2 " + rs.getString(2) + "Date " + rs.getString(3)
+            ).forEach(System.out::println);
+        }
+    }
+}

@@ -1,0 +1,127 @@
+02 Spring Boot App and data processing logic
+
+Project dependencies:
+1. Spring Web
+2. Spring Data JPA
+3. Spring batch
+4. Lombok
+5. DevTools
+
+Files needed in project files
+1. CSV file
+	> the application will access this file to populate the in memory database
+
+
+Configuring Spring Batch to use CSV file
+SOURCE: https://spring.io/guides/gs/batch-processing/
+1. Create the Business class based on CSV content data
+	> different from Entity that we will be using later
+2. Create the Model Entity class that we will populate using Business class
+3. Create an Intermediate Processor to process CSV file
+	> for this, we will need both the Business data and Entity data as they will serve as the input and output of processor
+
+
+Spring Batch components
+1. Job - consist of many Steps
+2. Step -  consist of Reader, Processor, and Writer
+3. Reader, Processor, Writer
+	> read, process, and write (in database) the data output of processor 
+
+
+
+NOTE:
+1. src/main/java and src/main/resources are BOTH in the classpath of a Maven project
+	> src/main/resources is a good place to put non-java file
+
+
+Codes:
+// MatchInput.java, the Business class
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class MatchInput {
+    private String id;
+    private String city;
+    private String date;
+    private String player_of_match;
+    private String venue;
+    private String neutral_venue;
+    private String team1;
+    private String team2;
+    private String toss_winner;
+    private String toss_decision;
+    private String winner;
+    private String result;
+    private String result_margin;
+    private String eliminator;
+    private String method;
+    private String umpire1;
+    private String umpire2;
+}
+
+
+// Match.java, the Model class that we will add in database
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Match {
+    private long id;
+    private String city;
+    private LocalDate date;
+    private String player_of_match;
+    private String venue;
+    private String team1;
+    private String team2;
+    private String toss_winner;
+    private String toss_decision;
+    private String winner;
+    private String result;
+    private String result_margin;
+    private String umpire1;
+    private String umpire2;
+}
+
+
+
+// MatchDataProcessor.java, the ItemProcessor that we will use in Spring Batch Step
+@Slf4j
+public class MatchDataProcessor implements ItemProcessor<MatchInput, Match> {
+
+    @Override
+    public Match process(final MatchInput inputMatch) throws Exception {
+        Match match = new Match();
+        match.setId(Long.parseLong(inputMatch.getId()));
+        match.setCity(inputMatch.getCity());
+        match.setDate(LocalDate.parse(inputMatch.getDate()));
+        match.setPlayer_of_match(inputMatch.getPlayer_of_match());
+        match.setVenue(inputMatch.getVenue());
+        match.setTeam1(inputMatch.getTeam1());
+        match.setTeam2(inputMatch.getTeam2());
+
+        // Sets the team1 to be the firstInningsTeam and team2 to be secondInningsTeam
+        String firstInningsTeam, secondInningsTeam;
+        if("bat".equals(inputMatch.getToss_decision())) {
+            firstInningsTeam = inputMatch.getToss_winner();
+            secondInningsTeam = inputMatch.getToss_winner().equals(inputMatch.getTeam1()) ?
+                    inputMatch.getTeam2() :
+                    inputMatch.getTeam1();
+        } else {
+            secondInningsTeam = inputMatch.getToss_winner();
+            firstInningsTeam = inputMatch.getToss_winner().equals(inputMatch.getTeam1()) ?
+                    inputMatch.getTeam2() :
+                    inputMatch.getTeam1();
+        }
+        match.setTeam1(firstInningsTeam);
+        match.setTeam2(secondInningsTeam);
+
+        match.setToss_winner(inputMatch.getToss_winner());
+        match.setToss_decision(inputMatch.getToss_decision());
+        match.setWinner(inputMatch.getWinner());
+        match.setResult(inputMatch.getResult());
+        match.setResult_margin(inputMatch.getResult_margin());
+        match.setUmpire1(inputMatch.getUmpire1());
+        match.setUmpire2(inputMatch.getUmpire2());
+
+        return match;
+    }
+}

@@ -1,0 +1,38 @@
+06 Starting with the frontend React app
+
+
+Creating React application
+Prerequisite
+1. Nodejs
+2. NPM
+
+Steps
+1. Execute the command below
+	> npx create-react-app <PROJECT NAME>
+	> ex: npx create-react-app ipl-dashboard
+
+
+
+React Frontend App of IPL Dashboard
+Page Components
+1. Team Page component
+	> composed of the different UI subcomponent
+		- totalMatch vs totalWin component
+		- Latest match component (MatchDetailCard)
+		- Last N match component (MatchSmallCard)
+
+
+
+
+
+NOTE:
+1. Where you put your frontend files will depend on your preferences
+	> in the video, he added it in the src folder of SpringBoot app
+	> but we can also add it in a separate folder
+2. In React, there are different kinds of Components that you will be making
+	> Page components, top level components
+3. Functional Component are the modern ways of writing React Components
+4. For React, its a good practice to export stuff (Component, Functions, etc), as a CONSTANT
+  	> this is to ensure that when we import this, we will need to specify that constant itself
+5. When creating React components, the best way to manage them in by separating the Page Components and the UI components
+	>ex: src/pages for Page Component, and src/components for UI components
