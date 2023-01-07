@@ -34,5 +34,55 @@ NOTE:
 3. Functional Component are the modern ways of writing React Components
 4. For React, its a good practice to export stuff (Component, Functions, etc), as a CONSTANT
   	> this is to ensure that when we import this, we will need to specify that constant itself
+	> 
 5. When creating React components, the best way to manage them in by separating the Page Components and the UI components
 	>ex: src/pages for Page Component, and src/components for UI components
+
+
+
+Code:
+// App.js
+function App() {
+  return (
+    <div className="App">
+      <TeamPage />
+    </div>
+  );
+}
+
+// App.css
+.App {
+  text-align: left;
+  padding: 20px;
+}
+
+
+// TeamPage.js
+export const TeamPage = () => {
+  return (
+    <div>
+      <h1>Team Name</h1>
+      <MatchDetailsCard />
+      <MatchSmallCard />
+      <MatchSmallCard />
+      <MatchSmallCard />
+    </div>
+  );
+};
+
+
+// MatchDetailsCard.js
+export const MatchDetailsCard = () => {
+  return (
+    <div>
+      <h3>Latest Match</h3>
+      <h4>Match Details</h4>
+    </div>
+  );
+};
+
+
+// MatchSmallCard.js
+export const MatchSmallCard = () => {
+  return <div>Match Small Card</div>;
+};

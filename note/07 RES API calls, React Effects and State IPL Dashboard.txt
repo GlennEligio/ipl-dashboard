@@ -1,0 +1,102 @@
+07 RES API calls, React Effects and State IPL Dashboard
+
+Component Hierarchy of the the IPL Dashboard
+
+App
+ > TeamPage
+   > MatchDetailCard
+   > MatchSmallCard
+
+
+GOAL:
+1. Add a logic where we will do a REST API call to fethc the data in order to populate the Component data
+
+PROCESS
+1. Use useEffect hook to fetch the team data from the Spring Boot backend
+2. Use useState to store the team data and be used to populate UI components part
+3. Using Team data, populate the following	
+	> the team name
+	> the latest match details, using first match, to MatchDetailsCard
+	> the latest 3 next matches, using 2nd, 3rd and 4th match, to MatchSmallCard
+
+
+NOTES:
+1. For fetching data from external API to populate the components, we can do the following	
+	a. Add the data fetching logic in the parent component (i.e. page component) and pass it down through props drilling
+	b. Create a Wrapper component that will be used instead of the Component itself. And inside Wrapper component, we will add the data fetching logic and render the actual component itself with the data
+2. When we fetch data in a cross-domain fashion, you may encounter an issue related to CORS or Cross Origin Resource Sharing
+	> to fix this, we must specify in the backend that its find sharing the response data from client of different origin
+		- for SpringBoot, we can add @CrossOrigin in the @Controller class
+	> though we must still be careful since this means that everyone can see the response output of their request
+
+
+
+Code:
+// TeamPage.js
+export const TeamPage = () => {
+  const [team, setTeam] = useState({});
+
+  useEffect(() => {
+    fetchMatches();
+  }, []);
+
+  const fetchMatches = async () => {
+    const response = await fetch(
+      "http://localhost:8080/api/v1/teams/Delhi%20Capitals"
+    );
+    const data = await response.json();
+    console.log(data);
+    setTeam(data);
+  };
+
+  return (
+    <div>
+      <h1>{team.teamName}</h1>
+      {team.matches && team.matches.length > 0 && (
+        <>
+          <MatchDetailsCard match={team.matches[0]} />
+          {team.matches.slice(1).map((m) => (
+            <MatchSmallCard match={m} />
+          ))}
+        </>
+      )}
+    </div>
+  );
+};
+
+
+
+// MatchDetailsCard.js
+export const MatchDetailsCard = (props) => {
+  return (
+    <div>
+      <h3>Latest Match</h3>
+      <h4>Match Details</h4>
+      <h4>
+        {props.match.team1} vs {props.match.team2}
+      </h4>
+    </div>
+  );
+};
+
+
+// MatchSmallCard.js
+export const MatchSmallCard = (props) => {
+  return (
+    <div className="MatchSmallCard">
+      <p>
+        {props.match.team1} vs {props.match.team2}
+      </p>
+    </div>
+  );
+};
+
+
+
+// TeamController.java
+@CrossOrigin
+@RestController
+@RequestMapping("/api/v1/teams")
+public class TeamController {
+...
+}
