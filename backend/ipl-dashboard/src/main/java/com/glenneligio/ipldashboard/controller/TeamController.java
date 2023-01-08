@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,5 +33,16 @@ public class TeamController {
             team1.setMatches(matches);
             return ResponseEntity.ok(team1);
         }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{teamName}/matches")
+    public ResponseEntity<List<Match>> getMatchesForTeam(@PathVariable String teamName, @RequestParam int year) {
+        LocalDate startDate = LocalDate.of(year, 1, 1);
+        LocalDate endDate = LocalDate.of(year + 1, 1, 1);
+        return ResponseEntity.ok(matchRepository.getMatchesByTeamNameBetweenDate(
+                teamName,
+                startDate,
+                endDate
+        ));
     }
 }

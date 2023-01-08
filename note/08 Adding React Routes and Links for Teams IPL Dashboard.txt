@@ -1,0 +1,131 @@
+08 Adding React Routes and Links for Teams IPL Dashboard
+
+Dependencies
+1. React Router Dom
+	> to install, use the command below
+		- npm install react-router-dom
+
+
+GOAL:
+1. Use React Router to create a route to the Team Page
+2. Add Path Variable in the route path of Team Page to specify the Team name
+3. Use the Team name path variable from uri using useParam() hook of react-router-dom to get the team data
+4. Add logic to Team page where it will notify if theres no team data for specific team name provided
+5. Configure the MatchDetailsCard and MatchSmallCard to take the teamName used to get the team info
+	> this is to provide context as to what team we are checking. In the MatchDetailsCard and MatchSmallCard, we only want to show who the team fought since the team name is already displayed at the top most part of Team Page
+6. Add logic where the other teams displayed in the Team page is a hyperlink that navigate them to a Team page for that specific team
+	> we can do this by using the Link from React Router Dom, and passing the url with that other team's teamName
+	> we will then add the teamName from useParam() result in the dependency array of the useEffect() inside Team Page to request the team info again
+
+
+NOTE:
+1. Usage of react-router-dom will differ from versions to versions. Check the version you are using in the package.json and check its documentations
+
+
+CODE:
+// TeamPage.js
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { MatchDetailsCard } from "../components/MatchDetailsCard";
+import { MatchSmallCard } from "../components/MatchSmallCard";
+
+export const TeamPage = () => {
+  const [team, setTeam] = useState({});
+  const { teamName } = useParams();
+
+  useEffect(() => {
+    fetchMatches();
+  }, [teamName]);
+
+  const fetchMatches = async () => {
+    const uri = decodeURI(`http://localhost:8080/api/v1/teams/${teamName}`);
+    const response = await fetch(uri);
+    const data = await response.json();
+    console.log(data);
+    setTeam(data);
+  };
+
+  if (!team || !team.matches) {
+    return <h1>Team not found</h1>;
+  }
+
+  return (
+    <div>
+      <h1>{team.teamName}</h1>
+      {team.matches && team.matches.length > 0 && (
+        <>
+          <MatchDetailsCard match={team.matches[0]} teamName={team.teamName} />
+          {team.matches.slice(1).map((m) => (
+            <MatchSmallCard match={m} key={m.id} teamName={team.teamName} />
+          ))}
+        </>
+      )}
+    </div>
+  );
+};
+
+
+
+// App.js
+import "./App.css";
+import { TeamPage } from "./pages/TeamPage";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+
+function App() {
+  return (
+    <div className="App">
+      <Router>
+        <Routes>
+          <Route path="/team/:teamName" element={<TeamPage />} />
+        </Routes>
+      </Router>
+    </div>
+  );
+}
+
+export default App;
+
+
+
+// MatchDetailsCard.js
+import React from "react";
+import { Link } from "react-router-dom";
+
+export const MatchDetailsCard = ({ teamName, match }) => {
+  const otherTeam = match.team1 === teamName ? match.team2 : match.team1;
+  const otherTeamRoute = `/team/${otherTeam}`;
+  return (
+    <div>
+      <h3>Latest Match</h3>
+      <h1>
+        vs <Link to={otherTeamRoute}>{otherTeam}</Link>
+      </h1>
+      <h2>{match.date}</h2>
+      <h3>at {match.venue}</h3>
+      <h3>
+        {match.winner} won by {match.resultMargin} {match.result}
+      </h3>
+    </div>
+  );
+};
+
+
+
+// MatchSmallCard.js
+import React from "react";
+import { Link } from "react-router-dom";
+
+export const MatchSmallCard = ({ teamName, match }) => {
+  const otherTeam = match.team1 === teamName ? match.team2 : match.team1;
+  const otherTeamRoute = `/team/${otherTeam}`;
+  return (
+    <div className="MatchSmallCard">
+      <h3>
+        vs <Link to={otherTeamRoute}>{otherTeam}</Link>
+      </h3>
+      <p>
+        {match.winner} won by {match.resultMargin} {match.result}
+      </p>
+    </div>
+  );
+};

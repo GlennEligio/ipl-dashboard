@@ -1,0 +1,8 @@
+09 Adding match API and Match frontend page
+
+GOAL:
+1. Create REST API endpoints to serve:
+	> matches of specific team at specific year
+2. Create frontend components for
+	> Match page
+3. Add Route configuration in Frontend to serve the Match page in the "/team/:teamName/matches/:year" url
