@@ -6,3 +6,128 @@ GOAL:
 2. Create frontend components for
 	> Match page
 3. Add Route configuration in Frontend to serve the Match page in the "/team/:teamName/matches/:year" url
+
+
+NOTES:
+1. For API endpoints, if we are querying a List of Objects using their properties, its better to put them in the query param instead of path variable
+
+
+
+CODES:
+// App.js
+function App() {
+  return (
+    <div className="App">
+      <Router>
+        <Routes>
+          <Route path="/team/:teamName/matches/:year" element={<MatchPage />} />
+          <Route path="/team/:teamName" element={<TeamPage />} />
+        </Routes>
+      </Router>
+    </div>
+  );
+}
+
+export default App;
+
+
+
+
+
+// MatchPage.js
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { MatchDetailsCard } from "../components/MatchDetailsCard";
+
+export const MatchPage = () => {
+  const { year, teamName } = useParams();
+  const [matches, setMatches] = useState([]);
+
+  useEffect(() => {
+    getMatchesOfYearByTeam();
+  }, [year, teamName]);
+
+  const getMatchesOfYearByTeam = async () => {
+    const params = new URLSearchParams({ year: year }).toString();
+    const uri = decodeURI(
+      `http://localhost:8080/api/v1/teams/${teamName}/matches?${params}`
+    );
+    const response = await fetch(uri);
+    const data = await response.json();
+    console.log(data);
+    setMatches(data);
+  };
+
+  return (
+    <div className="MatchPage">
+      <h1>Match Page</h1>
+      {matches.map((m) => (
+        <MatchDetailsCard key={m.id} match={m} teamName={teamName} />
+      ))}
+    </div>
+  );
+};
+
+
+
+
+// MatchRepository.java
+public interface MatchRepository extends CrudRepository<Match, Long> {
+
+    List<Match> getByTeam1OrTeam2OrderByDateDesc(String teamName1, String teamName2, Pageable pageable);
+
+    @Query("SELECT m FROM Match m WHERE (m.team1=:teamName OR m.team2=:teamName) " +
+            "AND (m.date BETWEEN :date1 AND :date2) " +
+            "ORDER BY date desc")
+    List<Match> getMatchesByTeamNameBetweenDate(
+            @Param("teamName") String teamName,
+            @Param("date1") LocalDate date1,
+            @Param("date2") LocalDate date2);
+
+//    List<Match> getByTeam1AndDateBetweenOrTeam2AndDateBetweenOrderByDateDesc(
+//            String teamName1, LocalDate date1, LocalDate date2,
+//            String teamName2, LocalDate date3, LocalDate date4
+//    );
+
+    default List<Match> findLatestMatchesByTeam(String teamName, int count) {
+        return getByTeam1OrTeam2OrderByDateDesc(teamName, teamName, PageRequest.of(0, count));
+    }
+}
+
+
+
+// TeamController.java
+@CrossOrigin
+@RestController
+@RequestMapping("/api/v1/teams")
+public class TeamController {
+
+    private TeamRepository repository;
+    private MatchRepository matchRepository;
+
+    public TeamController(TeamRepository repository, MatchRepository matchRepository) {
+        this.repository = repository;
+        this.matchRepository = matchRepository;
+    }
+
+    @GetMapping("/{teamName}")
+    public ResponseEntity<Team> getTeam(@PathVariable String teamName) {
+        Optional<Team> team = repository.findByTeamName(teamName);
+        List<Match> matches = matchRepository.findLatestMatchesByTeam(teamName, 4);
+        return team.map(team1 -> {
+            team1.setMatches(matches);
+            return ResponseEntity.ok(team1);
+        }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{teamName}/matches")
+    public ResponseEntity<List<Match>> getMatchesForTeam(@PathVariable String teamName, @RequestParam int year) {
+        LocalDate startDate = LocalDate.of(year, 1, 1);
+        LocalDate endDate = LocalDate.of(year + 1, 1, 1);
+        return ResponseEntity.ok(matchRepository.getMatchesByTeamNameBetweenDate(
+                teamName,
+                startDate,
+                endDate
+        ));
+    }
+}

@@ -1,0 +1,296 @@
+10 Styling Team Page and Components UI IPL Dashboard
+
+Dependencies:
+1. sass
+	> npm module to be able to use Sass
+2. react-minimal-pie-chart
+ 	> used to be able to render a piechart given a specific dataset
+
+
+
+Styling Team page
+1. Use CSS Grid to position UI components
+	> Grid size is 3 row, 4 columns
+	> 1st row: Team name 3 col, Wins/losses 1 col
+	> 2nd row: MatchDetailsCard
+	> 3rd row: 3 MatchSmallCard 1 col, More 1 col
+2. For MatchDetailsCard and MatchSmallCard, we will style it where the card background is green if the team won, else its red
+
+
+
+NOTE:
+1. For UI styling, developers often receives the UI spepcifications/design from UI/UX designers
+2. In a new React app, it creates two types of styling, the Global styling and Component level styling
+	> index.css file is the Global styling, because it is directly used in the index.html of the React app
+	> App.css is a component level styling since, it is associated with App.js Component. Also, component level styles needs to be imported
+	> Note that styles applied to a Component is applied to the Subcomponents as well
+3. Making some npm dependencies a "DevDependencies" like those that are related to testing can make the final build more compact
+	> to do this, we need to specific in package.json which are "dependencies" and "devDependencies"
+	> we can also add "-D" option when installing an npm module to specify that it is a devDependency
+4. Initial step for styling webpage includes setting the following properties to ALL element
+	> we can use "*" for selected all elements affected
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+5. We must take account of ACCESSIBILITY when it comes to designing a webpage	
+	> for example, removing the underline for link tags may cause accessibility issue, so do this with caution
+
+
+
+CODES:
+// index.css
+@import url("https://fonts.googleapis.com/css2?family=Rubik:wght@400;600&display=swap");
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Rubik", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #282c34;
+  color: white;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+a {
+  text-decoration: none;
+  color: lightgray;
+}
+
+
+
+// App.css
+.App {
+  text-align: left;
+  padding: 20px;
+}
+
+.won-card {
+  background-color: #4da375;
+}
+
+.lost-card {
+  background-color: #a34d5d;
+}
+
+
+
+
+// TeamPage.js
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { MatchDetailsCard } from "../components/MatchDetailsCard";
+import { MatchSmallCard } from "../components/MatchSmallCard";
+import { PieChart } from "react-minimal-pie-chart";
+import "./TeamPage.scss";
+
+export const TeamPage = () => {
+  const [team, setTeam] = useState({ matches: [] });
+  const { teamName } = useParams();
+
+  useEffect(() => {
+    fetchMatches();
+  }, [teamName]);
+
+  const fetchMatches = async () => {
+    const uri = decodeURI(`http://localhost:8080/api/v1/teams/${teamName}`);
+    const response = await fetch(uri);
+    const data = await response.json();
+    console.log(data);
+    setTeam(data);
+  };
+
+  if (!team || !team.matches) {
+    return <h1>Team not found</h1>;
+  }
+
+  return (
+    <div className="TeamPage">
+      <div className="team-name-section">
+        <h1 className="team-name">{team.teamName}</h1>
+      </div>
+      <div className="win-loss-section">
+        Win/Losses
+        <PieChart
+          data={[
+            {
+              title: "Loss",
+              value: team.totalMatches - team.totalWins,
+              color: "#a34d5d",
+            },
+            { title: "Win", value: team.totalWins, color: "#4da375" },
+          ]}
+        />
+        ;
+      </div>
+      {team.matches && team.matches.length > 0 && (
+        <>
+          <div className="match-detail-section">
+            <h3>Latest Match</h3>
+            <MatchDetailsCard
+              match={team.matches[0]}
+              teamName={team.teamName}
+            />
+          </div>
+          {team.matches.slice(1).map((m) => (
+            <MatchSmallCard match={m} key={m.id} teamName={team.teamName} />
+          ))}
+        </>
+      )}
+      <div className="more-link">
+        <a href="#">{"More >"}</a>
+      </div>
+    </div>
+  );
+};
+
+
+
+// TeamPage.scss
+.TeamPage {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  column-gap: 10px;
+  row-gap: 10px;
+
+  .team-name-section {
+    grid-column: span 3;
+    justify-self: start;
+    align-self: end;
+  }
+
+  .team-name {
+    font-size: 4rem;
+    margin-bottom: 20px;
+  }
+
+  .match-detail-section {
+    grid-column: span 4;
+  }
+
+  .win-loss-section {
+    justify-self: center;
+    padding: 40px;
+    text-align: center;
+  }
+
+  .more-link {
+    align-self: center;
+    justify-self: center;
+    font-size: 1.5rem;
+  }
+}
+
+
+
+// MatchSmallCard.js
+import React from "react";
+import { Link } from "react-router-dom";
+import "./MatchSmallCard.scss";
+
+export const MatchSmallCard = ({ teamName, match }) => {
+  const otherTeam = match.team1 === teamName ? match.team2 : match.team1;
+  const otherTeamRoute = `/team/${otherTeam}`;
+  const isMatchWon = teamName === match.winner;
+  return (
+    <div className={`MatchSmallCard ${isMatchWon ? "won-card" : "lost-card"}`}>
+      <span className="vs">vs</span>
+      <h1>
+        <Link to={otherTeamRoute}>{otherTeam}</Link>
+      </h1>
+      <p className="match-result">
+        {match.winner} won by {match.resultMargin} {match.result}
+      </p>
+    </div>
+  );
+};
+
+
+
+// MatchSmallCard.scss
+.MatchSmallCard {
+  padding: 10px;
+  margin-bottom: 20px;
+
+  .match-date,
+  .match-venue,
+  .match-result {
+    margin-top: 10px;
+  }
+}
+
+
+
+// MatchDetailsCard.js
+import React from "react";
+import { Link } from "react-router-dom";
+import "./MatchDetailsCard.scss";
+
+export const MatchDetailsCard = ({ teamName, match }) => {
+  const otherTeam = match.team1 === teamName ? match.team2 : match.team1;
+  const otherTeamRoute = `/team/${otherTeam}`;
+  const isMatchWon = teamName === match.winner;
+  return (
+    <div
+      className={`MatchDetailsCard ${isMatchWon ? "won-card" : "lost-card"}`}
+    >
+      <div>
+        <span className="vs">vs</span>
+        <h1>
+          <Link to={otherTeamRoute}>{otherTeam}</Link>
+        </h1>
+        <h2 className="match-date">{match.date}</h2>
+        <h3 className="match-venue">at {match.venue}</h3>
+        <h3 className="match-result">
+          {match.winner} won by {match.resultMargin} {match.result}
+        </h3>
+      </div>
+      <div className="additional-details">
+        <h3>First Innings</h3>
+        <p>{match.team1}</p>
+        <h3>Second Innings</h3>
+        <p>{match.team2}</p>
+        <h3>Man of the match</h3>
+        <p>{match.playerOfMatch}</p>
+        <h3>Umpires</h3>
+        <p>
+          {match.umpire1}, {match.umpire2}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+
+// MatchDetailsCard.scss
+.MatchDetailsCard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 10px;
+
+  .match-date,
+  .match-venue,
+  .match-result {
+    margin-top: 10px;
+  }
+
+  .additional-details {
+    text-align: right;
+    & > p {
+      margin-bottom: 20px;
+    }
+  }
+}
+
+
+
