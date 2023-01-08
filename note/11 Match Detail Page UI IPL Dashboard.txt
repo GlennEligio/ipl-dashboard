@@ -1,0 +1,16 @@
+11 Match Detail Page UI IPL Dashboard
+
+GOALS:
+1. Style the MatchPage component
+2. Create the two components of MatchPage
+	> YearSelector
+	> Matches list
+3. Render them using CSS grid
+4. Pass the teamName in YearSelector component
+	> we will add logic in YearSelector to change the URI to another date
+
+
+
+NOTES:
+1. It is a best practice to choose the correct HTML element tag to match the semantics of the said component
+	> ex: if its a list, its better to use <ul> <ol> <li> rather than <div> since its much clearer to read and understand when reading the source code
