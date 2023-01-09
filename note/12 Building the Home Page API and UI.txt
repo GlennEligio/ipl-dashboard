@@ -1,7 +1,110 @@
 12 Building the Home Page API and UI
 
 
+GOAL:
+1. Create an API endpoint that will serve the Teams info
+2. Create a UI for HomePage, which will show all the Teams in IPL	
+	> When we click a Team, we should be redirected to TeamPage
+
+
+// TeamController.js, additional endpoint
+    @GetMapping
+    public ResponseEntity<Iterable<Team>> getTeams() {
+        return ResponseEntity.ok(repository.findAll());
+    }
+
+
+// App.js, additional routing
+function App() {
+  return (
+    <div className="App">
+      <Router>
+        <Routes>
+          <Route path="/team/:teamName/matches/:year" element={<MatchPage />} />
+          <Route path="/team/:teamName" element={<TeamPage />} />
+          <Route path="/" element={<HomePage />} />
+        </Routes>
+      </Router>
+    </div>
+  );
+}
+
+
+// HomePage.js
+export const HomePage = () => {
+  const [teams, setTeams] = useState([]);
+
+  useEffect(() => {
+    fetchTeams();
+  }, []);
+
+  const fetchTeams = async () => {
+    const response = await fetch("http://localhost:8080/api/v1/teams");
+    const data = await response.json();
+    setTeams(data);
+  };
+
+  return (
+    <div className="HomePage">
+      <div className="header-section">
+        <h1 className="app-name">Java Brains IPL Dashboard</h1>
+      </div>
+      <div className="team-grid">
+        {teams.map((team) => (
+          <TeamTile teamName={team.teamName} key={team.teamName} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+
+// HomePage.scss
+.HomePage {
+  .team-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 10px;
+    row-gap: 10px;
+  }
+}
+
+
+// TeamTile.js
+import React from "react";
+import "./TeamTile.scss";
+import { Link } from "react-router-dom";
+
+export const TeamTile = ({ teamName }) => {
+  return (
+    <div className="TeamTile">
+      <h1>
+        <Link to={`/team/${teamName}`}>{teamName}</Link>
+      </h1>
+    </div>
+  );
+};
+
+
+
+// TeamTile.scss
+.TeamTile {
+  height: 170px;
+  text-align: center;
+  border: 1px solid white;
+  padding: 20px;
+}
+
+
+
+
+
+
 NOTE:
 1. When styling a React Component, its a good practice not to define the specific size of it inside the JSX element that it is returning
 	> its better to write the sizing style in its parent compoent
 	> this ensure that the React Component can be usable wherever you put it
+2. The build output of a React app is a static website, which consist of html, css, js, and some static (i.e. img) files
+3. When deploying a React+SpringBoot applications, we have two choices
+	> build the React app, and add it inside the SpringBoot application to be hosted
+	> React app and Spring boot will be built and hosted separately. React will be hosted in a dedicated server (i.e. Nginx), and Spring Boot will be deployed in separate server

@@ -1,0 +1,9 @@
+13 Cleaning up and setting up builds IPL Dashboard
+
+
+
+NOTES:
+1. React application build output is a static webpage, which consist of html, css, js, and some static files like img, png, etc
+	> this means that we can easily serve either in a dedicated server like NGINX or even in Spring Boot
+2. When we are rendering a list of Component (mapped from a list of objects via map()), then it is important to provide a "key" property to the Component render
+	> this helps the ReactJS when it comes to tracking and updating a specific component

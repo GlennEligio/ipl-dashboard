@@ -20,7 +20,6 @@ export const MatchPage = () => {
     );
     const response = await fetch(uri);
     const data = await response.json();
-    console.log(data);
     setMatches(data);
   };
 
