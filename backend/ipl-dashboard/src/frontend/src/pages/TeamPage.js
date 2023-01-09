@@ -44,7 +44,6 @@ export const TeamPage = () => {
             { title: "Win", value: team.totalWins, color: "#4da375" },
           ]}
         />
-        ;
       </div>
       {team.matches && team.matches.length > 0 && (
         <>
