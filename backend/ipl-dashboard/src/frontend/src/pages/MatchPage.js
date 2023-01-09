@@ -16,7 +16,7 @@ export const MatchPage = () => {
   const getMatchesOfYearByTeam = async () => {
     const params = new URLSearchParams({ year: year }).toString();
     const uri = encodeURI(
-      `http://localhost:8080/api/v1/teams/${teamName}/matches?${params}`
+      `${process.env.REACT_APP_API_ROOT_URL}/api/v1/teams/${teamName}/matches?${params}`
     );
     const response = await fetch(uri);
     const data = await response.json();

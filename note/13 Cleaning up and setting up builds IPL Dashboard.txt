@@ -1,5 +1,27 @@
 13 Cleaning up and setting up builds IPL Dashboard
 
+Classes/Interface used
+HashRouter
+ > <HashRouter> is for use in web browsers when the URL should not (or cannot) be sent to the server for some reason. 
+ > This may happen in some shared hosting scenarios where you do not have full control over the server. 
+ > In these situations, <HashRouter> makes it possible to store the current location in the hash portion of the current URL, so it is never sent to the server.
+ > ex: "localhost:8080/#/teams" will still be sent to "localhost:8080" but the React application can still access the appended location "/teams" to be used (ex: display different page based on route)
+
+
+GOAL:
+1. Modify frontend source code
+	> add environment variable for API ROOT URL
+	> modify all fetch call so that it uses the API ROOT URL environment variable
+	> change the routing so that it uses HashRouter instead of BrowserRouter
+		- important with regards to serving react app to Spring Boot since all routes will go to Spring Boot first
+		- unless we make request mapping config in Spring Boot, we wont be able to go directly to React app routes
+1. Insert the frontend source code inside backend source code
+	> root directory of React app should be inside src/frontend of the Spring boot app
+2. Modify the "build" script of the React app
+	> add a command to copy all build output of React app in the src/main/resources/public folder of Spring Boot app
+3. Build the Spring Boot app using "./mvnw install" command
+4. Test if the integration of spring boot and react app is working
+
 
 
 NOTES:
@@ -7,3 +29,133 @@ NOTES:
 	> this means that we can easily serve either in a dedicated server like NGINX or even in Spring Boot
 2. When we are rendering a list of Component (mapped from a list of objects via map()), then it is important to provide a "key" property to the Component render
 	> this helps the ReactJS when it comes to tracking and updating a specific component
+
+ex:
+      <div className="team-grid">
+        {teams.map((team) => (
+          <TeamTile teamName={team.teamName} key={team.teamName} />
+        ))}
+      </div>
+3. When a fetch() call only have relative url path passed to it, it will use the ip address of the server where the React app is being served as the base url
+	> below, we have a fetch call to "/api/v1/teams/teamName". If we are serving this React app in localhost:5050, the fetch url will be localhost:5050/api/v1/teams/teamName
+
+ex:
+  const fetchMatches = async () => {
+    const uri = encodeURI(`/api/v1/teams/${teamName}`);
+    const response = await fetch(uri);
+    const data = await response.json();
+    setTeam(data);
+  };
+4. For external api calls inside React app, it is best practice to NOT HARDCODE the url passed to the fetch() or axios()
+	> one of the solution for this is to pass the base url of the external api as environment variables
+	> or if we are hosting it in Nginx, we can make a distinction between the api url and react url (EX: api urls starts with "/api"), then in Nginx config, we can reroute the calls that starts with "/api" to other server
+
+EX:
+// .env
+REACT_APP_DATA_START_YEAR=2008
+REACT_APP_DATA_END_YEAR=2020
+REACT_APP_API_ROOT_URL=
+# REACT_APP_API_ROOT_URL=localhost:8080
+
+// TeamPage.js
+  const fetchMatches = async () => {
+    const uri = encodeURI(
+      `${process.env.REACT_APP_API_ROOT_URL}/api/v1/teams/${teamName}`
+    );
+    const response = await fetch(uri);
+    const data = await response.json();
+    setTeam(data);
+  };
+
+5. When we host the React app inside Spring boot app, all the React route will now go to Spring Boot app first, before being processed by React app
+	> this means that, unless we made request mapping changes in the Spring Boot app, user will face an error when they use React app urls directly
+	> to fix this, we can use HashRouter to create a url with React url location, which request is still sent to the actual React app
+	> ex: since React app is hosted in Spring boot base url (localhost:8080), any React route that we used before (i.e. /team/Delhi Capitals), will be processed by Spring boot first
+		- to prevent this, we can use HashRouter, alongside changing the url to "/team/Delhi Capitals" to "/#/team/Delhi Capitals"
+		- by adding "/#", all the location data (/team/Delhi Capitals) will not be included in the request, hence the request uri will be localhost:8080/
+
+
+PROJECT STRUCTURE:
+backend
+ > src
+   > frontend - frontend source code
+   > main
+     > java - backend source code
+     > resources
+       > public - frontend build output location
+ > target - backend build output location
+
+
+
+CODES:
+// App.js
+import "./App.css";
+import { TeamPage } from "./pages/TeamPage";
+import { HashRouter as Router, Route, Routes } from "react-router-dom";
+import { MatchPage } from "./pages/MatchPage";
+import { HomePage } from "./pages/HomePage";
+
+function App() {
+  return (
+    <div className="App">
+      <Router>
+        <Routes>
+          <Route path="/team/:teamName/matches/:year" element={<MatchPage />} />
+          <Route path="/team/:teamName" element={<TeamPage />} />
+          <Route path="/" element={<HomePage />} />
+        </Routes>
+      </Router>
+    </div>
+  );
+}
+
+export default App;
+
+
+// .env
+REACT_APP_DATA_START_YEAR=2008
+REACT_APP_DATA_END_YEAR=2020
+REACT_APP_API_ROOT_URL=
+# REACT_APP_API_ROOT_URL=localhost:8080 # use this line when developing locally
+
+
+
+// TeamPage.js, fetchMatches function
+  const fetchMatches = async () => {
+    const uri = encodeURI(
+      `${process.env.REACT_APP_API_ROOT_URL}/api/v1/teams/${teamName}`
+    );
+    const response = await fetch(uri);
+    const data = await response.json();
+    setTeam(data);
+  };
+
+
+// MatchPage.js, getMatchesOfYearByTeam function
+  const getMatchesOfYearByTeam = async () => {
+    const params = new URLSearchParams({ year: year }).toString();
+    const uri = encodeURI(
+      `${process.env.REACT_APP_API_ROOT_URL}/api/v1/teams/${teamName}/matches?${params}`
+    );
+    const response = await fetch(uri);
+    const data = await response.json();
+    setMatches(data);
+  };
+
+
+// HomePage.js
+  const fetchTeams = async () => {
+    const response = await fetch(`${process.env.REACT_APP_API_ROOT_URL}/api/v1/teams`);
+    const data = await response.json();
+    setTeams(data);
+  };
+
+
+// package.json, scripts
+// NOTE: command used for copying build output may differ from OS to OS
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build && xcopy .\\build\\* ..\\main\\resources\\public\\ /s /y",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },

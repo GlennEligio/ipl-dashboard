@@ -15,7 +15,9 @@ export const TeamPage = () => {
   }, [teamName]);
 
   const fetchMatches = async () => {
-    const uri = encodeURI(`http://localhost:8080/api/v1/teams/${teamName}`);
+    const uri = encodeURI(
+      `${process.env.REACT_APP_API_ROOT_URL}/api/v1/teams/${teamName}`
+    );
     const response = await fetch(uri);
     const data = await response.json();
     setTeam(data);
