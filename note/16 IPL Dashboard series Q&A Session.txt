@@ -1,0 +1,10 @@
+16 IPL Dashboard series Q&A Session
+
+
+NOTES:
+1. Controller - Service - DAO layers is not mandatory
+	> in this series, we only used Controller and JPA Repositories
+	> unless the requirement specifies it or in order to fulfill this requirement you need to create this layers, its not recommended to do so since this will add to more things to maintain
+2. Documentations is underrated
+	> days where bad documentations exist is over
+	> today, organization knows that unless they have good documentation, they wont get a good amount of developers trying their programming language or API

@@ -1,0 +1,36 @@
+14 Deploying to AWS IPL Dashboard
+
+Requirement
+1. AWS account
+
+
+Technologies used
+Amazon Elastic Beanstalk
+ > Amazon Elastic Beanstalk is an easy-to-use service for deploying and scaling web applications and services developed with Java, .NET, PHP, Node.js, Python, Ruby, Go, and Docker on familiar servers such as Apache, Nginx, Passenger, and IIS.
+
+
+GOAL:
+1. Host the Spring boot jar file in AWS Beanstalk
+	> for this, we will need the jar file output of the "./mvnw install" command, found inside the "target" folder in spring boot root directory
+
+
+STEPS:
+1. Go to AWS console
+2. Search for Amazon Elastic Beanstalk
+3. Provide necessary information like
+	> Application Name
+	> Application type (Java)
+	> Java version (must match the version used on Spring Boot)
+4. Build the Elastic Beanstalk
+	> initially this will not work, since we haven't provided the 
+5. Go to "Configuration" of Beanstalk, then to Software category
+	> inside add "SERVER_PORT" and set to 5000
+	> reason is that AWS Elastic Beanstalk assumes that our server is listening to port 5000
+	> by defining SERVER_PORT to 5000, we are telling the Spring Boot app to listen to this port
+6. In the Beanstalk instance dashboard, you will be able to see the URL in which the application is served
+	> ex: http://ipldashboard-env.eba-pd25b92h.ap-southeast-1.elasticbeanstalk.com/#/team/Sunrisers%20Hyderabad/matches/2015
+
+
+
+NOTES:
+1. AWS Elastic Beanstalk is a good way to host your web applications, especially if its a static application (where no database is used)

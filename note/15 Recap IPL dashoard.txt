@@ -1,0 +1,12 @@
+15 Recap IPL Dashboard
+
+
+Process thoughts with creating the IPL Dashboard includes:
+1. Make rough sketches of the App to create
+2. Fetch a data set to use for Application from Kaggel
+3. Create a system design, as to what tools we will use to create the app	
+	> we decided to use an embedded database since the data is static
+	> we also used Spring Batch to batch process the CSV file dataset and populate the database
+	> we used Spring Boot with Spring Web to expose endpoints to serve data from database
+	> we also design the frontend UI to be used by users using ReactJS
+
