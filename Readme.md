@@ -15,7 +15,7 @@ https://www.youtube.com/playlist?list=PLqq-6Pq4lTTa8V613TZhGq4o8hSgkMGQ0
 
 ### Team Page
 
-![Team Page Page](/screenshots/TeamPage.png)
+![Team Page Page](/screenshots/TeamPage2.png)
 
 ### Matches Page
 
