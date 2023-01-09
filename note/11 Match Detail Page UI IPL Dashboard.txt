@@ -14,3 +14,168 @@ GOALS:
 NOTES:
 1. It is a best practice to choose the correct HTML element tag to match the semantics of the said component
 	> ex: if its a list, its better to use <ul> <ol> <li> rather than <div> since its much clearer to read and understand when reading the source code
+
+
+
+CODES:
+// TeamPage.js
+// Added logic in the More > link
+export const TeamPage = () => {
+  const [team, setTeam] = useState({ matches: [] });
+  const { teamName } = useParams();
+  const endYear = process.env.REACT_APP_DATA_END_YEAR;
+
+  useEffect(() => {
+    fetchMatches();
+  }, [teamName]);
+
+  const fetchMatches = async () => {
+    const uri = encodeURI(`http://localhost:8080/api/v1/teams/${teamName}`);
+    const response = await fetch(uri);
+    const data = await response.json();
+    setTeam(data);
+  };
+
+  if (!team || !team.matches) {
+    return <h1>Team not found</h1>;
+  }
+
+  return (
+    <div className="TeamPage">
+      <div className="team-name-section">
+        <h1 className="team-name">{team.teamName}</h1>
+      </div>
+      <div className="win-loss-section">
+        Win/Losses
+        <PieChart
+          data={[
+            {
+              title: "Loss",
+              value: team.totalMatches - team.totalWins,
+              color: "#a34d5d",
+            },
+            { title: "Win", value: team.totalWins, color: "#4da375" },
+          ]}
+        />
+        ;
+      </div>
+      {team.matches && team.matches.length > 0 && (
+        <>
+          <div className="match-detail-section">
+            <h3>Latest Match</h3>
+            <MatchDetailsCard
+              match={team.matches[0]}
+              teamName={team.teamName}
+            />
+          </div>
+          {team.matches.slice(1).map((m) => (
+            <MatchSmallCard match={m} key={m.id} teamName={team.teamName} />
+          ))}
+        </>
+      )}
+      <div className="more-link">
+        <Link to={`/team/${team.teamName}/matches/${endYear}`}>{"More >"}</Link>
+      </div>
+    </div>
+  );
+};
+
+
+
+// MatchPage.js
+export const MatchPage = () => {
+  const { year, teamName } = useParams();
+  const [matches, setMatches] = useState([]);
+
+  useEffect(() => {
+    getMatchesOfYearByTeam();
+  }, [year, teamName]);
+
+  const getMatchesOfYearByTeam = async () => {
+    const params = new URLSearchParams({ year: year }).toString();
+    const uri = encodeURI(
+      `http://localhost:8080/api/v1/teams/${teamName}/matches?${params}`
+    );
+    const response = await fetch(uri);
+    const data = await response.json();
+    console.log(data);
+    setMatches(data);
+  };
+
+  return (
+    <div className="MatchPage">
+      <div className="year-selector">
+        <h3>Select Year</h3>
+        <YearSelector teamName={teamName} />
+      </div>
+      <div>
+        <h1 className="page-heading">
+          {teamName} matches in {year}
+        </h1>
+        {matches.map((m) => (
+          <MatchDetailsCard key={m.id} match={m} teamName={teamName} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+
+// MatchPage.scss
+.MatchPage {
+  display: grid;
+  grid-template-columns: 1fr 6fr;
+  column-gap: 20px;
+
+  .year-selector {
+    justify-self: end;
+    padding: 20px;
+  }
+
+  .page-heading {
+    margin: 20px auto;
+  }
+}
+
+
+
+// YearSelector.js
+// To display years to select matches
+export const YearSelector = ({ teamName }) => {
+  let years = [];
+  const startYear = process.env.REACT_APP_DATA_START_YEAR;
+  const endYear = process.env.REACT_APP_DATA_END_YEAR;
+  for (let i = startYear; i <= endYear; i++) {
+    years.push(i);
+  }
+
+  return (
+    <ol className="YearSelector">
+      {years.map((year) => (
+        <li>
+          <Link to={`/team/${teamName}/matches/${year}`}>{year}</Link>
+        </li>
+      ))}
+    </ol>
+  );
+};
+
+
+
+// YearSelector.scss
+.YearSelector {
+  text-align: right;
+  list-style-type: none;
+
+  li {
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+}
+
+
+
+// .env
+// specify the start and end year of the matches
+REACT_APP_DATA_START_YEAR=2008
+REACT_APP_DATA_END_YEAR=2020

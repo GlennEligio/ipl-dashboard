@@ -25,6 +25,11 @@ public class TeamController {
         this.matchRepository = matchRepository;
     }
 
+    @GetMapping
+    public ResponseEntity<Iterable<Team>> getTeams() {
+        return ResponseEntity.ok(repository.findAll());
+    }
+
     @GetMapping("/{teamName}")
     public ResponseEntity<Team> getTeam(@PathVariable String teamName) {
         Optional<Team> team = repository.findByTeamName(teamName);

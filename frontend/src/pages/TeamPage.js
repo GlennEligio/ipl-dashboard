@@ -18,7 +18,6 @@ export const TeamPage = () => {
     const uri = encodeURI(`http://localhost:8080/api/v1/teams/${teamName}`);
     const response = await fetch(uri);
     const data = await response.json();
-    console.log(data);
     setTeam(data);
   };
 

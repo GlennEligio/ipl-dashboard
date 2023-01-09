@@ -1,0 +1,7 @@
+12 Building the Home Page API and UI
+
+
+NOTE:
+1. When styling a React Component, its a good practice not to define the specific size of it inside the JSX element that it is returning
+	> its better to write the sizing style in its parent compoent
+	> this ensure that the React Component can be usable wherever you put it
